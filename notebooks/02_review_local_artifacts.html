@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAR notebook preview</title><style>
+body{max-width:880px;margin:40px auto;padding:0 24px;font:17px/1.6 system-ui;color:#172b3a;background:#fcfcfa}
+h1,h2{line-height:1.2;color:#123f55}h2{margin-top:36px}
+pre{padding:18px;border-radius:8px;overflow:auto;font:14px/1.5 monospace}
+.code{background:#edf1f4}.output{background:#e9f5ef;border-left:4px solid #34805b}
+a{color:#126788}code{font-size:.9em}</style><main><h1>Optional local artifacts</h1>
+<p>No artifacts are distributed. Supply a trusted compatible local bundle only if independently authorized. This default execution skips real inference. Do not publish locally executed outputs containing artifact metadata.</p>
+<pre class="code"><code>BUNDLE = &#x27;&#x27;
+TRUST_BUNDLE = False</code></pre><pre class="code"><code>if not BUNDLE or not TRUST_BUNDLE:
+    print(&#x27;SKIP: set an explicit local BUNDLE path and TRUST_BUNDLE=True after verifying permission and publisher trust.&#x27;)
+else:
+    from ai_research_work.f1.bundle import Bundle
+    from ai_research_work.f1 import Predictor
+    bundle=Bundle(BUNDLE)
+    model=Predictor(BUNDLE)
+    model.load()
+    print(&#x27;PASS: compatible local bundle and model state loaded; no training or accuracy benchmark.&#x27;)</code></pre><pre class="output">SKIP: set an explicit local BUNDLE path and TRUST_BUNDLE=True after verifying permission and publisher trust.
+</pre><p>Raw inference requires separately permitted local MAT/video inputs. Follow ../HOW_TO_RUN.md. Integrity checks are unchanged and no manifest identities should be rewritten to bypass them. Missing prerequisites are not a successful real-data run.</p>
+</main></html>

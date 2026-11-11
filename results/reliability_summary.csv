@@ -1,0 +1,3 @@
+detector,condition,accepted_known_accuracy_percent,unknown_false_acceptance_percent,aggregation
+D1,both,99.62,58.33,subject_seed_mean
+D2,both,99.62,60.42,subject_seed_mean

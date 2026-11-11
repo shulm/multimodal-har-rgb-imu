@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAR notebook preview</title><style>
+body{max-width:880px;margin:40px auto;padding:0 24px;font:17px/1.6 system-ui;color:#172b3a;background:#fcfcfa}
+h1,h2{line-height:1.2;color:#123f55}h2{margin-top:36px}
+pre{padding:18px;border-radius:8px;overflow:auto;font:14px/1.5 monospace}
+.code{background:#edf1f4}.output{background:#e9f5ef;border-left:4px solid #34805b}
+a{color:#126788}code{font-size:.9em}</style><main><h1>Understanding lightweight RGB + IMU fusion</h1>
+<p>Synthetic examples only. No training, model download or recognition benchmark. Historical results and limitations are documented separately in ../docs/evaluation.md.</p>
+<pre class="code"><code>import socket
+def forbidden(*args, **kwargs):
+    raise AssertionError(&#x27;Network disabled for this notebook&#x27;)
+socket.socket.connect = forbidden
+socket.create_connection = forbidden
+import numpy as np
+import torch
+from ai_research_work.models import SensorModel, VideoModel
+from ai_research_work.f1 import predict
+from ai_research_work.f1.preprocessing import hof
+torch.set_num_threads(1)
+print(&#x27;Synthetic offline mode&#x27;)</code></pre><pre class="output">Synthetic offline mode
+</pre><h2>Shapes and model size</h2>
+<p>Random initialization demonstrates only the interfaces. Each branch produces eight logits.</p>
+<pre class="code"><code>s,v=SensorModel(),VideoModel(8,128)
+with torch.inference_mode():
+    print(&#x27;Sensor:&#x27;,tuple(s(torch.zeros(1,128,6)).shape))
+    print(&#x27;HOF:&#x27;,tuple(v(torch.zeros(1,16,128)).shape))
+print(&#x27;Parameters:&#x27;,sum(p.numel() for m in (s,v) for p in m.parameters()))</code></pre><pre class="output">Sensor: (1, 8)
+HOF: (1, 8)
+Parameters: 66672
+</pre><h2>Motion representation</h2>
+<p>Static synthetic frames yield zero optical-flow histograms. This is a present observation, not a missing modality.</p>
+<pre class="code"><code>x=hof(np.zeros((2,120,160,3),np.uint8))
+print(&#x27;Histogram:&#x27;,x.shape,&#x27;sum:&#x27;,float(x.sum()))</code></pre><pre class="output">Histogram: (16, 128) sum: 0.0
+</pre><h2>Equal averaging and surviving branches</h2>
+<p>Probabilities below are made up for arithmetic illustration, not measured predictions.</p>
+<pre class="code"><code>ps=np.array([.7,.1,.05,.05,.025,.025,.025,.025])
+pv=np.array([.5,.3,.05,.05,.025,.025,.025,.025])
+p=.5*ps+.5*pv
+print(&#x27;Both:&#x27;,p.round(3).tolist())
+print(&#x27;Sensor-only:&#x27;,ps.tolist())
+print(&#x27;Neither:&#x27;,predict(&#x27;absent&#x27;)[&#x27;status&#x27;])</code></pre><pre class="output">Both: [0.6, 0.2, 0.05, 0.05, 0.025, 0.025, 0.025, 0.025]
+Sensor-only: [0.7, 0.1, 0.05, 0.05, 0.025, 0.025, 0.025, 0.025]
+Neither: insufficient_input
+</pre><h2>Rejection and descriptive sets</h2>
+<p>D2 uses 1−max raw p. Unknown rejection precedes C2; a singleton is accepted only after passing the detector. Temperatures change reporting, not these rules. Toy thresholds below are not fitted parameters.</p>
+<pre class="code"><code>threshold=.5; q=.45
+score=1-p.max()
+indices=np.flatnonzero(1-p&lt;=q).tolist()
+status=&#x27;unknown&#x27; if score&gt;threshold else &#x27;accepted&#x27; if len(indices)==1 else &#x27;uncertain&#x27;
+print({&#x27;score&#x27;:round(float(score),3),&#x27;toy_set_indices&#x27;:indices,&#x27;status&#x27;:status})</code></pre><pre class="output">{&#x27;score&#x27;: 0.4, &#x27;toy_set_indices&#x27;: [0], &#x27;status&#x27;: &#x27;accepted&#x27;}
+</pre><h2>What this does not establish</h2>
+<p>C2 is descriptive pooled-crossfit calibration, not a formal new-person guarantee. Throw can be accepted as wave in the historical development evidence. Similar retrieved neighbors do not prove a decision correct. No trained accuracy follows from these cells.</p>
+</main></html>

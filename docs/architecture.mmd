@@ -1,0 +1,9 @@
+flowchart LR
+  IMU[Six IMU channels] --> R[128-step resampling] --> S[Sensor CNN]
+  RGB[Completed RGB clip] --> H[Optical-flow histogram] --> V[GRU]
+  S --> F[Equal probability average or surviving branch]
+  V --> F
+  F --> O[D1 or D2 rejection]
+  O --> C[Raw C2 set]
+  C --> A[Accepted / uncertain / unknown]
+  N[Neither input] --> M[Insufficient input]

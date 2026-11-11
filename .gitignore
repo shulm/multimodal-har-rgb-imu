@@ -1,0 +1,17 @@
+.venv*/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+build/
+dist/
+local-artifacts/
+*.pt
+*.npz
+*.mat
+*.avi
+*.zip
+*.tgz
+*.jsonl
+.env*

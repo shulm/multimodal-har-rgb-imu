@@ -1,0 +1,2 @@
+model,accuracy_percent,macro_f1_percent,parameters,unique_known_clips,seeds,scope
+equal_sensor_hof,98.96,98.86,66672,191,3,six_subject_eight_action_LOSO_development
