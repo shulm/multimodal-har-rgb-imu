@@ -1,46 +1,45 @@
-# Lightweight RGB + IMU activity recognition
+# RGB-IMU activity recognition: GRU and Transformer
 
 David Shulman · [shulm](https://github.com/shulm)
 
-A small completed-clip classifier combining a six-channel inertial CNN with an
-optical-flow-histogram GRU. Equal probability averaging gives a simple multimodal
-decision; either branch can operate alone. Explicit uncertainty and rejection
-states keep a missing input or an ambiguous prediction visible to the caller.
+A completed-clip classifier combining a six-channel sensor CNN with RGB-derived optical-flow histograms. Choose a HOF-GRU or a tiny HOF-Transformer, then arithmetic or normalized-product probability fusion. Either branch can operate alone. The full-class API returns classification scores, not a claim that an activity is known, accepted or safe.
 
-The selected development study reported **98.96% accuracy**, **98.86% macro-F1**
-and **66,672 classifier parameters** over eight actions and six subjects using
-leave-one-subject-out evaluation. These are historical aggregate results, not
-measurements produced by the synthetic quick-start. There were 191 unique known
-clips and three repeated seeds, not 573 independent recordings or people.
+## Full-dataset benchmark
 
-The central limitation is unknown activity: **throw can be accepted as wave**.
-High accuracy among accepted known examples is not deployment precision.
-This is a research portfolio, with no deployed-service or state-of-the-art claim.
+UTD-MHAD: **861 usable paired recordings, all 27 actions and eight people**. Eight-fold leave-one-person-out evaluation trains on seven people and tests on the remaining person at seeds **17, 29 and 43**. Results average seeds within person, then weight all eight people equally.
 
-## Run without data
+| System | Accuracy % | Macro-F1 % | NLL | Brier |
+|---|---:|---:|---:|---:|
+| GRU + arithmetic | 85.92 | 83.75 | 0.541258 | 0.239410 |
+| GRU + product | 89.17 | 87.52 | 0.694219 | 0.180640 |
+| Transformer + arithmetic | 87.85 | 86.19 | 0.488315 | 0.212298 |
+| Transformer + product | 91.68 | 90.64 | 0.597152 | 0.148871 |
 
-Use Python 3.12 and a new virtual environment. Install the CPU wheel and package:
+Source of the table and notebook plot: [machine-readable results](results/full_dataset_results.json). Lower NLL and Brier are better. Product improves these closed-set accuracy results but worsens NLL relative to arithmetic for each encoder. Sensor + GRU has **69,142** trainable classifier parameters; sensor + Transformer has **70,646**. The sensor branch is shared between the two comparisons.
+
+“Full dataset” describes coverage under the declared folds. It does not mean training and testing on the same recordings, distributing the dataset, or supplying one final model trained on everyone. The benchmark is not a deployable all-subject checkpoint. The earlier [eight-action development result](docs/legacy_eight_action.md) uses a different task and is not directly comparable.
+
+## Run without data or weights
+
+Use Python 3.12 in a new virtual environment, then run from this repository:
 
 ```sh
 python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r requirements-lock.txt
 python -m pip install . --no-deps
+python -m ai_research_work.har demo --model hof_gru --fusion arithmetic
+python -m ai_research_work.har demo --model hof_transformer --fusion product
 python -m pytest -q
-python scripts/smoke.py
-python -m ai_research_work.f1 predict --bundle absent --detector D2
 ```
 
-The last command returns `insufficient_input` without loading weights. The smoke
-uses synthetic arrays and randomly initialized models: it verifies shapes and
-plumbing, not recognition quality. No training or runtime download is included.
+Demos use synthetic arrays and explicitly untrained models. They exercise inference shapes, fusion and fallback; they do not estimate accuracy or reproduce the benchmark. Arithmetic is the backward-compatible default. Inference performs no downloads or training.
 
-Start with [installation and local inference](HOW_TO_RUN.md), the
-[teaching notebook](notebooks/01_understand_f1.ipynb), or its
-[saved HTML preview](notebooks/01_understand_f1.html).
-Read [method](docs/method.md), [evaluation](docs/evaluation.md),
-[limitations](docs/limitations.md), and [model card](MODEL_CARD.md).
+See [installation and optional local inference](HOW_TO_RUN.md), [model definitions](docs/models.md), [benchmark protocols](docs/benchmark_protocols.md), and the [comparison notebook](notebooks/03_compare_models.ipynb) with its [HTML preview](notebooks/03_compare_models.html). The [first teaching notebook](notebooks/01_understand_f1.ipynb) and [optional local-artifact notebook](notebooks/02_review_local_artifacts.ipynb) remain available.
 
-Real weights, reference banks, replay arrays and raw data are not distributed.
-[Optional local verification](notebooks/02_review_local_artifacts.ipynb) requires
-an explicitly supplied, trusted compatible bundle. No private account is required
-for the synthetic mode. See [data](DATA.md) and [licensing](LICENSING.md).
+## Included and excluded
+
+Included: authored inference code, tests, synthetic teaching examples and historical aggregate results. Excluded: source RGB/IMU recordings, participant images, checkpoints, reference banks and per-record predictions. Optional real inference requires a trusted compatible local bundle and permitted local inputs. No private account is needed for the synthetic mode.
+
+Missing one modality returns its surviving branch probabilities unchanged. Neither input yields `insufficient_input`; malformed supplied input is an error. Classification and acceptance are distinct: no full-class acceptance policy is bundled, and legacy thresholds must not be reused. One small benchmark, sensor-placement/action confounding and the lack of operational unknown-action guarantees limit deployment conclusions. No state-of-the-art, external-validation, real-time-streaming or measured product-pipeline-latency claim is made.
+
+Read the [model card](MODEL_CARD.md), [data notes](DATA.md), [limitations](docs/limitations.md), [reproducibility](docs/reproducibility.md), and [licensing terms](LICENSING.md).

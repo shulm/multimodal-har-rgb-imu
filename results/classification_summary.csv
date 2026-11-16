@@ -1,2 +1,5 @@
-model,accuracy_percent,macro_f1_percent,parameters,unique_known_clips,seeds,scope
-equal_sensor_hof,98.96,98.86,66672,191,3,six_subject_eight_action_LOSO_development
+model,fusion,accuracy,macro_f1,nll,brier,parameters
+hof_gru,arithmetic,0.859207338179,0.837519935382,0.541258498594,0.23940966997,69142
+hof_gru,product,0.891712097612,0.875206300901,0.694219177976,0.180639557302,69142
+hof_transformer,arithmetic,0.878501067267,0.861933385544,0.488315416068,0.21229843395,70646
+hof_transformer,product,0.916828920042,0.906397888805,0.597152153948,0.148871306194,70646

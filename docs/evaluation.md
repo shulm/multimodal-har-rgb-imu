@@ -1,34 +1,9 @@
-# Development evidence
+# Evaluation
 
-The selected study used eight known actions, six subjects, six leave-one-subject-out
-folds and three seeds. It contains 191 unique known-action clips and 573 repeated
-seed-trial predictions. Headline accuracy and macro-F1 average subjects within each
-seed, then seeds. Repeated seeds are dependent; overlapping training folds also
-limit uncertainty interpretations. No raw records are distributed here.
+The principal table is [full_dataset_results.json](../results/full_dataset_results.json), with a CSV view in [classification_summary.csv](../results/classification_summary.csv). Accuracy and macro-F1 are fractions in machine files and percentages in README; NLL and multiclass Brier retain native units. Lower NLL/Brier is better. The comparison notebook reads the JSON directly, keeping the historical measured plot separate from synthetic model outputs.
 
-| Selected model | Accuracy | Macro-F1 | Classifier parameters |
-|---|---:|---:|---:|
-| Equal sensor CNN + HOF-GRU probability average | 98.96% | 98.86% | 66,672 |
+Eight held-person folds cover all 861 usable paired recordings and all 27 actions. Three seeds are averaged within person, then people equally. There are 2,583 seed-recording decisions per fused system, not 2,583 independent recordings or people. The two encoder comparisons share a sensor branch. Product improves accuracy and Brier in these aggregates while worsening NLL relative to arithmetic.
 
-These historical summaries are transcribed aggregate evidence, not a fresh benchmark
-run by this export. Earlier evaluation subjects were inspected during development;
-there is no historically untouched final-test claim. Learned missingness heads and
-imbalance corrections were experimental comparisons, not replacements for this model.
+No synthetic demonstration estimates these metrics. Independent full reproduction requires permitted recordings, preprocessing/training artifacts and the original experiment specification; this inference-focused repository distributes neither data nor weights and does not add a training runner. Optional local artifact checks establish compatibility only for the supplied artifact. Random-weight save/load tests are not trained-model parity tests.
 
-For both inputs, accepted-known accuracy was about 99.62% for D1 and D2, while
-unknown false acceptance was about 58.33% (D1) and 60.42% (D2). These policy rates
-average subject/seed evaluations. Unknown false acceptance means an unknown was
-accepted as a known action, not merely that the detector failed to reject it.
-C2 pooled-crossfit construction achieved mean known coverage of about 90.2%,
-a descriptive quantity. An observed throw→wave acceptance demonstrates why selective known
-accuracy cannot be interpreted as precision in a deployment mixture.
-
-Selected-study CPU completed-clip latency was approximately 381 ms median and
-517 ms p95, with preprocessing included and model loading outside the timer.
-Reference setup: Windows 10, Python 3.12.4, Torch 2.6 CPU, NumPy 2.1.3,
-OpenCV 4.13; one Torch/OpenCV thread; Intel family 6 model 94, four physical/eight
-logical cores and 15.8 GiB RAM. These are not streaming or end-to-end service
-latencies, and will vary with clip length and hardware.
-
-Machine-readable aggregates: [classification](../results/classification_summary.csv)
-and [reliability](../results/reliability_summary.csv). See [limitations](limitations.md).
+The selected eight-action results remain [historical](legacy_eight_action.md). Reliability outputs are separate from closed-set classification; see [protocols](benchmark_protocols.md).

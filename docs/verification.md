@@ -1,31 +1,11 @@
-# Portfolio verification
+# Verification
 
-Executed for this edition in a new Windows Python 3.12.4 CPU environment:
+This edition was installed in a clean Python 3.12 environment with CPU PyTorch 2.6.0. Dependency checking (`python -m pip check`) passed. The test suite completed with **70 passed and one skipped**; the skip requires an optional trusted legacy bundle. All three notebooks executed successfully and their HTML previews were regenerated with synthetic examples and approved aggregates only.
 
-- Package wheel built and installed from this repository alone; pip check passed.
-- Public tests: 22 passed, one optional artifact test skipped.
-- No-network synthetic smoke: passed. Both-missing returns insufficient_input
-  without loading weights. An explicitly missing bundle fails with exit code 2;
-  omitted optional artifacts produce a clear SKIP message.
-- Educational notebook: five code cells executed with saved outputs. Optional
-  notebook: two setup/guard cells executed; real artifact loading skipped by default.
-  HTML previews contain no scripts, remote assets, widgets or participant images.
-- Separately, an explicitly supplied trusted local bundle validation test passed.
-- Local numerical comparison newly executed across 18 compatible development
-  bundles: 4,302 decisions exactly matched the retained original runtime outputs,
-  including probabilities, sets and neighbors. Against saved development evidence,
-  zero decision mismatches; maximum score error 2.345e-7 (tolerance 2e-6).
-- One authorized known-action raw clip: six pattern/detector checks matched
-  statuses, actions, sets and neighbor order. Probability maximum absolute errors
-  were below 4e-9; embedding maximum absolute error was 1.145e-5, within the
-  unchanged atol=2e-5 plus rtol=1e-4 comparison. This is a bounded consistency
-  check, not a new accuracy experiment or full raw-data benchmark.
-- Numerical function/class syntax trees match the retained implementation.
-  Differences are removal of unused training/legacy code and one rewritten
-  provenance docstring. No preprocessing, parameters, thresholds or policy changed.
+Separate trained-weight parity checks covered six fixtures and 24 model/query cases. The port and reference produced exactly equal outputs when both ran on the same CPU backend. Comparisons with saved historical probabilities passed absolute tolerance `2e-5` and relative tolerance `1e-4`. Small internal differences against the historical CUDA computation were observed; these checks do not promise bitwise equality across hardware or numerical backends. Private trained fixtures and weights are not distributed.
 
-Artifact-dependent evidence was checked locally and is not distributed. Public CI
-runs synthetic checks only. CI actions are pinned to immutable official checkout
-v4 and setup-python v5 revisions, verified through the publishers' Git refs.
-No training occurred. The tested Windows dependency inventory is
-../requirements-environment.txt; portable direct pins are ../requirements-lock.txt.
+Run `python -m pytest -q`, the four HAR demo model/fusion combinations in HOW_TO_RUN.md, and `python scripts/execute_notebooks.py` from a clean installed environment. Public checks use synthetic fixtures or approved aggregate results and need no private credentials. They do not reproduce model training or the historical benchmark.
+
+Tests cover both encoder shapes and 27-class parameter counts, ordered labels, fusion normalization, missingness and malformed input, versioned bundles, CLI behavior and legacy compatibility. Random-model fixture tests check serialization, not trained recognition. Repeating trained-weight parity requires separately authorized trusted local artifacts.
+
+HTML previews and saved notebook outputs contain no real recordings, checkpoint contents, per-record predictions or local artifact paths. Keep these exclusions when rerunning the notebooks with optional local artifacts.

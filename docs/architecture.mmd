@@ -1,9 +1,8 @@
 flowchart LR
   IMU[Six IMU channels] --> R[128-step resampling] --> S[Sensor CNN]
-  RGB[Completed RGB clip] --> H[Optical-flow histogram] --> V[GRU]
-  S --> F[Equal probability average or surviving branch]
+  RGB[Completed RGB clip] --> H[Optical-flow histogram] --> V[HOF-GRU or tiny HOF-Transformer]
+  S --> F[Arithmetic or normalized product; unchanged surviving branch]
   V --> F
-  F --> O[D1 or D2 rejection]
-  O --> C[Raw C2 set]
-  C --> A[Accepted / uncertain / unknown]
+  F --> O[Ordered class probabilities and top-1 prediction]
+  O --> C[Acceptance not evaluated]
   N[Neither input] --> M[Insufficient input]

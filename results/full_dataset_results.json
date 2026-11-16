@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "evidence_scope": "Completed historical closed-set benchmark aggregates; not outputs of the synthetic demo or a distributed all-subject checkpoint.",
+  "protocol": {
+    "dataset": "UTD-MHAD",
+    "usable_paired_recordings": 861,
+    "actions": 27,
+    "people": 8,
+    "folds": 8,
+    "training_people_per_fold": 7,
+    "test_people_per_fold": 1,
+    "seeds": [
+      17,
+      29,
+      43
+    ],
+    "aggregation": "Average seeds within person, then equal weight across the eight people.",
+    "inputs": [
+      "RGB-derived optical-flow histograms",
+      "released six-channel inertial stream"
+    ],
+    "backend": "Historical CUDA LOSO comparison; separate CPU open-set experiments are not interchangeable."
+  },
+  "metric_units": {
+    "accuracy": "fraction",
+    "macro_f1": "fraction",
+    "nll": "natural-log units; lower is better",
+    "brier": "sum of squared class-probability errors; lower is better",
+    "parameters": "trainable classifier parameters"
+  },
+  "branch_parameters": {
+    "sensor_cnn": 29883,
+    "hof_gru": 39259,
+    "hof_transformer": 40763
+  },
+  "systems": [
+    {
+      "model": "hof_gru",
+      "fusion": "arithmetic",
+      "accuracy": 0.859207338179,
+      "macro_f1": 0.837519935382,
+      "nll": 0.541258498594,
+      "brier": 0.23940966997,
+      "parameters": 69142
+    },
+    {
+      "model": "hof_gru",
+      "fusion": "product",
+      "accuracy": 0.891712097612,
+      "macro_f1": 0.875206300901,
+      "nll": 0.694219177976,
+      "brier": 0.180639557302,
+      "parameters": 69142
+    },
+    {
+      "model": "hof_transformer",
+      "fusion": "arithmetic",
+      "accuracy": 0.878501067267,
+      "macro_f1": 0.861933385544,
+      "nll": 0.488315416068,
+      "brier": 0.21229843395,
+      "parameters": 70646
+    },
+    {
+      "model": "hof_transformer",
+      "fusion": "product",
+      "accuracy": 0.916828920042,
+      "macro_f1": 0.906397888805,
+      "nll": 0.597152153948,
+      "brier": 0.148871306194,
+      "parameters": 70646
+    }
+  ]
+}
