@@ -3,11 +3,14 @@ requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "multimodal-har-rgb-imu"
-version = "0.1.0"
-description = "Lightweight completed-clip RGB and IMU recognition"
+version = "0.2.0"
+description = "Completed-clip RGB–IMU recognition with HOF-GRU and tiny HOF-Transformer"
+readme = "README.md"
 requires-python = ">=3.12,<3.13"
 authors = [{name = "David Shulman"}]
 dependencies = ["numpy==2.1.3", "scipy==1.15.1", "torch==2.6.0", "opencv-python==4.13.0.92"]
+[project.urls]
+Repository = "https://github.com/shulm/multimodal-har-rgb-imu"
 [tool.setuptools.packages.find]
 where = ["src"]
 [tool.pytest.ini_options]

@@ -1,14 +1,5 @@
-# Retrieval and monitoring
+# Legacy retrieval and monitoring context
 
-Normalize each available 64-dimensional embedding, concatenate available blocks,
-then normalize again. Search only the matching saved fold and modality space using
-exact cosine distance. Ties use stable trial-ID order; explicit query IDs exclude
-self-matches. Reference labels come from training data. Do not mix coordinates from
-separately fitted encoders. Retrieval explains similarity, not causality, and never
-adds classes or changes the classifier decision.
+The `f1` development API retains optional reference-bank retrieval and local telemetry for its compatible eight-action bundles. These are historical application experiments, not features or acceptance safeguards of the new full-class classification API. The reference banks and calibration replay arrays are not distributed.
 
-Local telemetry allowlists fields and excludes raw media and input paths. Summary
-denominators distinguish requests, reviewed events, and reviewed accepted events.
-Reviewed subsets are not population estimators. Monitoring is a proposal: a future
-service would need governed sampling, human review, privacy controls and explicit
-drift criteria. This repository does not implement that service or retraining.
+Retrieval can expose representative neighbors when permitted evidence is available; it does not prove the current activity is known or safe. Leave-out identities and bundle class order must remain consistent. Logging predictions, uncertainty and modality availability can support later analysis, but logs may contain sensitive identifiers and are local-only. Do not commit them or use an unvalidated drift score as an automatic retraining trigger.

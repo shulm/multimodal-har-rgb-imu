@@ -3,6 +3,7 @@ from pathlib import Path
 import nbformat
 from nbclient import NotebookClient
 from html import escape
+import sys
 import mistune
 root=Path(__file__).resolve().parents[1]
 for path in sorted((root/'notebooks').glob('*.ipynb')):
@@ -11,7 +12,10 @@ for path in sorted((root/'notebooks').glob('*.ipynb')):
         if cell.cell_type=='code': cell.outputs=[]; cell.execution_count=None
         cell.metadata={}
     nb.metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'}}
-    NotebookClient(nb,timeout=120,kernel_name='python3',resources={'metadata':{'path':str(root)}}).execute()
+    client=NotebookClient(nb,timeout=120,kernel_name='python3',resources={'metadata':{'path':str(root)}})
+    client.km=client.create_kernel_manager()
+    client.km.kernel_spec.argv=[sys.executable,'-m','ipykernel_launcher','-f','{connection_file}']
+    client.execute()
     for cell in nb.cells: cell.metadata={}
     nb.metadata={'kernelspec':{'name':'python3','display_name':'Python 3','language':'python'}}
     nbformat.write(nb,path)
@@ -22,6 +26,10 @@ for path in sorted((root/'notebooks').glob('*.ipynb')):
         else:
             sections.append('<pre class="code"><code>'+escape(cell.source)+'</code></pre>')
             for out in cell.outputs:
+                svg=out.get('data',{}).get('image/svg+xml')
+                if svg:
+                    sections.append('<figure>'+svg+'</figure>')
+                    continue
                 text=out.get('text',out.get('data',{}).get('text/plain',''))
                 sections.append('<pre class="output">'+escape(text)+'</pre>')
     html='''<!doctype html><html lang="en"><meta charset="utf-8">
@@ -31,6 +39,6 @@ body{max-width:880px;margin:40px auto;padding:0 24px;font:17px/1.6 system-ui;col
 h1,h2{line-height:1.2;color:#123f55}h2{margin-top:36px}
 pre{padding:18px;border-radius:8px;overflow:auto;font:14px/1.5 monospace}
 .code{background:#edf1f4}.output{background:#e9f5ef;border-left:4px solid #34805b}
-a{color:#126788}code{font-size:.9em}</style><main>'''+''.join(sections)+'</main></html>'
+a{color:#126788}code{font-size:.9em}figure{margin:20px 0;overflow:auto}figure svg{max-width:100%;height:auto}</style><main>'''+''.join(sections)+'</main></html>'
     path.with_suffix('.html').write_text(html,encoding='utf-8')
     print(path.name+': executed')

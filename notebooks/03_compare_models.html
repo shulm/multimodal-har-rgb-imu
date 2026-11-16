@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAR notebook preview</title><style>
+body{max-width:880px;margin:40px auto;padding:0 24px;font:17px/1.6 system-ui;color:#172b3a;background:#fcfcfa}
+h1,h2{line-height:1.2;color:#123f55}h2{margin-top:36px}
+pre{padding:18px;border-radius:8px;overflow:auto;font:14px/1.5 monospace}
+.code{background:#edf1f4}.output{background:#e9f5ef;border-left:4px solid #34805b}
+a{color:#126788}code{font-size:.9em}figure{margin:20px 0;overflow:auto}figure svg{max-width:100%;height:auto}</style><main><h1>GRU and Transformer: computation versus measured evidence</h1>
+<p>This notebook separates synthetic, untrained forward passes from the committed historical benchmark aggregates. It does not train a model or download recordings or weights.</p>
+<pre class="code"><code>from pathlib import Path
+import json
+import numpy as np
+import torch
+from IPython.display import SVG, display
+from ai_research_work.har import SensorCNN, HOFGRU, HOFTransformer, fuse_probabilities
+torch.set_num_threads(1)
+_ = torch.manual_seed(17)</code></pre><h2>Same sensor branch, two video encoders</h2>
+<p>A six-channel [batch,128,6] sensor tensor goes to the CNN. RGB becomes Farneback flow then [batch,16,128] HOF. Both video encoders consume that same HOF representation. The Transformer is small and temporal; it does not operate directly on raw RGB pixels.</p>
+<pre class="code"><code>sensor = SensorCNN(27).eval()
+video_models = {&#x27;hof_gru&#x27;:HOFGRU(27).eval(), &#x27;hof_transformer&#x27;:HOFTransformer(27).eval()}
+xs = torch.zeros(2,128,6); xv = torch.zeros(2,16,128)
+ids = list(range(1,28)); labels = [f&#x27;demo class {i}&#x27; for i in ids]
+def branch(p):
+    return {&#x27;action_ids&#x27;:ids,&#x27;labels&#x27;:labels,&#x27;probabilities&#x27;:p}
+with torch.inference_mode():
+    ps = torch.softmax(sensor(xs),dim=1).numpy()
+    for name, model in video_models.items():
+        pv = torch.softmax(model(xv),dim=1).numpy()
+        print(name, &#x27;logits shape:&#x27;, tuple(model(xv).shape), &#x27;fused classifier parameters:&#x27;, sum(p.numel() for p in sensor.parameters())+sum(p.numel() for p in model.parameters()))
+        for rule in [&#x27;arithmetic&#x27;,&#x27;product&#x27;]:
+            result = fuse_probabilities(branch(ps),branch(pv),fusion=rule)
+            print(&#x27; &#x27;, rule, &#x27;output:&#x27;, result[&#x27;probabilities&#x27;].shape, &#x27;row sums:&#x27;, result[&#x27;probabilities&#x27;].sum(1).round(6).tolist(), &#x27;acceptance:&#x27;,result[&#x27;acceptance&#x27;])
+            assert np.array_equal(fuse_probabilities(branch(ps),None,fusion=rule)[&#x27;probabilities&#x27;],ps)
+            assert np.array_equal(fuse_probabilities(None,branch(pv),fusion=rule)[&#x27;probabilities&#x27;],pv)
+assert fuse_probabilities()[&#x27;status&#x27;]==&#x27;insufficient_input&#x27;</code></pre><pre class="output">hof_gru logits shape: (2, 27) fused classifier parameters: 69142
+  arithmetic output: (2, 27) row sums: [1.0, 1.0] acceptance: not_evaluated
+  product output: (2, 27) row sums: [1.0, 1.0] acceptance: not_evaluated
+hof_transformer logits shape: (2, 27) fused classifier parameters: 70646
+  arithmetic output: (2, 27) row sums: [1.0, 1.0] acceptance: not_evaluated
+  product output: (2, 27) row sums: [1.0, 1.0] acceptance: not_evaluated
+</pre><h2>Historical 27-action benchmark (not synthetic outputs)</h2>
+<p>861 usable paired clips, eight people, eight seven-train/one-test LOSO folds, seeds 17/29/43. Average seeds within person, then people equally. Full-dataset coverage is not training/test reuse or one distributed all-subject checkpoint. Accuracy and macro-F1 below are percentages; NLL and Brier retain native units.</p>
+<pre class="code"><code>root = Path.cwd()
+if not (root/&#x27;results/full_dataset_results.json&#x27;).exists():
+    root = root.parent
+benchmark = json.loads((root/&#x27;results/full_dataset_results.json&#x27;).read_text(encoding=&#x27;utf-8&#x27;))
+for row in benchmark[&#x27;systems&#x27;]:
+    print(f&quot;{row[&#x27;model&#x27;]:15} {row[&#x27;fusion&#x27;]:10} accuracy={100*row[&#x27;accuracy&#x27;]:.2f}% macro-F1={100*row[&#x27;macro_f1&#x27;]:.2f}% NLL={row[&#x27;nll&#x27;]:.6f} Brier={row[&#x27;brier&#x27;]:.6f}&quot;)</code></pre><pre class="output">hof_gru         arithmetic accuracy=85.92% macro-F1=83.75% NLL=0.541258 Brier=0.239410
+hof_gru         product    accuracy=89.17% macro-F1=87.52% NLL=0.694219 Brier=0.180640
+hof_transformer arithmetic accuracy=87.85% macro-F1=86.19% NLL=0.488315 Brier=0.212298
+hof_transformer product    accuracy=91.68% macro-F1=90.64% NLL=0.597152 Brier=0.148871
+</pre><pre class="code"><code># A compact plot made only from committed aggregate values.
+parts = [&#x27;&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;760&quot; height=&quot;260&quot; viewBox=&quot;0 0 760 260&quot;&gt;&#x27;, &#x27;&lt;rect width=&quot;760&quot; height=&quot;260&quot; fill=&quot;white&quot;/&gt;&#x27;, &#x27;&lt;text x=&quot;12&quot; y=&quot;24&quot; font-family=&quot;sans-serif&quot; font-size=&quot;17&quot;&gt;Historical 27-action LOSO accuracy (three seeds)&lt;/text&gt;&#x27;]
+for i,row in enumerate(benchmark[&#x27;systems&#x27;]):
+    y = 50 + i*42
+    label = (&#x27;GRU&#x27; if row[&#x27;model&#x27;]==&#x27;hof_gru&#x27; else &#x27;Transformer&#x27;) + &#x27; / &#x27; + row[&#x27;fusion&#x27;]
+    width = 400*row[&#x27;accuracy&#x27;]
+    color = &#x27;#0072B2&#x27; if row[&#x27;fusion&#x27;]==&#x27;arithmetic&#x27; else &#x27;#D55E00&#x27;
+    parts += [f&#x27;&lt;text x=&quot;12&quot; y=&quot;{y+18}&quot; font-family=&quot;sans-serif&quot; font-size=&quot;14&quot;&gt;{label}&lt;/text&gt;&#x27;, f&#x27;&lt;rect x=&quot;215&quot; y=&quot;{y}&quot; width=&quot;{width:.3f}&quot; height=&quot;26&quot; fill=&quot;{color}&quot;/&gt;&#x27;, f&#x27;&lt;text x=&quot;{225+width:.3f}&quot; y=&quot;{y+18}&quot; font-family=&quot;sans-serif&quot; font-size=&quot;14&quot;&gt;{100*row[&quot;accuracy&quot;]:.2f}%&lt;/text&gt;&#x27;]
+parts += [&#x27;&lt;text x=&quot;215&quot; y=&quot;242&quot; font-family=&quot;sans-serif&quot; font-size=&quot;13&quot;&gt;0% (bar origin)&lt;/text&gt;&#x27;, &#x27;&lt;text x=&quot;585&quot; y=&quot;242&quot; font-family=&quot;sans-serif&quot; font-size=&quot;13&quot;&gt;100%&lt;/text&gt;&#x27;, &#x27;&lt;/svg&gt;&#x27;]
+display(SVG(&#x27;&#x27;.join(parts)))</code></pre><figure><svg xmlns="http://www.w3.org/2000/svg" width="760" height="260" viewBox="0 0 760 260"><rect width="760" height="260" fill="white"/><text x="12" y="24" font-family="sans-serif" font-size="17">Historical 27-action LOSO accuracy (three seeds)</text><text x="12" y="68" font-family="sans-serif" font-size="14">GRU / arithmetic</text><rect x="215" y="50" width="343.683" height="26" fill="#0072B2"/><text x="568.683" y="68" font-family="sans-serif" font-size="14">85.92%</text><text x="12" y="110" font-family="sans-serif" font-size="14">GRU / product</text><rect x="215" y="92" width="356.685" height="26" fill="#D55E00"/><text x="581.685" y="110" font-family="sans-serif" font-size="14">89.17%</text><text x="12" y="152" font-family="sans-serif" font-size="14">Transformer / arithmetic</text><rect x="215" y="134" width="351.400" height="26" fill="#0072B2"/><text x="576.400" y="152" font-family="sans-serif" font-size="14">87.85%</text><text x="12" y="194" font-family="sans-serif" font-size="14">Transformer / product</text><rect x="215" y="176" width="366.732" height="26" fill="#D55E00"/><text x="591.732" y="194" font-family="sans-serif" font-size="14">91.68%</text><text x="215" y="242" font-family="sans-serif" font-size="13">0% (bar origin)</text><text x="585" y="242" font-family="sans-serif" font-size="13">100%</text></svg></figure><h2>Interpretation</h2>
+<p>Product has higher recorded accuracy and lower Brier, but worse NLL than arithmetic for each encoder. These metrics answer different questions. Both systems share their sensor branch. The historical CUDA LOSO comparison and CPU open-set study are different protocols and are not claimed bitwise identical. No synthetic accuracy is reported.</p>
+<p>The separate seed-17 20-known/seven-unknown reliability study does not establish acceptance performance for the 91.68% benchmark classifier. Its recalibrated-rule results depend on operating point and include deployment-level losses of correct-known utility. Full-class inference therefore exposes scores without labelling them safe or accepted. No state-of-the-art, external-validation, streaming or product-latency claim is implied.</p>
+</main></html>
